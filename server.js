@@ -1,6 +1,8 @@
 var express = require('express');
 var passport = require('passport');
 var Strategy = require('passport-github').Strategy;
+var session = require('express-session');
+var MongoStore = require('connect-mongo')(session);
 require("dotenv").config();
 
 var port = process.env.PORT || 3000;
@@ -57,7 +59,13 @@ app.set('view engine', 'ejs');
 app.use(require('morgan')('combined'));
 app.use(require('cookie-parser')());
 app.use(require('body-parser').urlencoded({ extended: true }));
-app.use(require('express-session')({ secret: 'keyboard cat', resave: true, saveUninitialized: true }));
+// See: https://github.com/jdesboeufs/connect-mongo
+app.use(session({
+  secret: 'keyboard cat',
+  resave: true,
+  saveUninitialized: false,
+  store: new MongoStore({ url: 'mongodb://localhost/express-github-example' }),
+}));
 
 // Initialize Passport and restore authentication state, if any, from the
 // session.
@@ -82,6 +90,12 @@ app.get('/login/github',
 app.get('/login/github/return',
   passport.authenticate('github', { failureRedirect: '/login' }),
   function(req, res) {
+    res.redirect('/');
+  });
+
+app.get('/logout',
+  function(req, res) {
+    req.logout();
     res.redirect('/');
   });
 
